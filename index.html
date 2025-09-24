@@ -1,0 +1,3061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Jeff Nippard PPL Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --medium: #6b7280;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --success: #22c55e;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--white);
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .phase-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .deload-warning {
+            background: var(--warning);
+            color: white;
+            padding: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .tab-navigation {
+            display: flex;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 88px;
+            z-index: 99;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            background: none;
+            color: var(--medium);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+        }
+
+        .content {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .workout-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .summary-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.3s;
+        }
+
+        .exercise-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .exercise-card.completed {
+            opacity: 0.7;
+            border-color: var(--success);
+        }
+
+        .exercise-header {
+            padding: 16px;
+            background: var(--light);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .exercise-header .exercise-number {
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .exercise-name {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--dark);
+            margin-bottom: 4px;
+            padding-left: 32px;
+        }
+
+        .exercise-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--medium);
+            margin-top: 8px;
+            padding-left: 32px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .technique-badge {
+            background: var(--warning);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .exercise-content {
+            padding: 16px;
+            display: none;
+        }
+
+        .exercise-card.expanded .exercise-content {
+            display: block;
+        }
+
+        .video-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .video-link:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .pr-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 8px;
+            animation: shine 2s infinite;
+        }
+
+        @keyframes shine {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .pr-history {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-left: 4px solid var(--warning);
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        .pr-history strong {
+            color: #d97706;
+        }
+
+        .previous-performance {
+            background: #f0f9ff;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        .previous-performance strong {
+            color: var(--primary);
+        }
+
+        .exercise-notes {
+            background: #fef3c7;
+            border-left: 4px solid var(--warning);
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+            border-radius: 4px;
+        }
+
+        .substitutions {
+            background: #dbeafe;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        .sets-section {
+            margin-bottom: 20px;
+        }
+
+        .sets-section-title {
+            font-weight: 600;
+            color: var(--medium);
+            margin-bottom: 12px;
+            padding-left: 8px;
+            font-size: 14px;
+        }
+
+        .set-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: var(--light);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .set-row.warmup {
+            background: #fef3c7;
+            opacity: 0.9;
+        }
+
+        .set-row.completed {
+            background: #dcfce7;
+            border: 1px solid var(--success);
+        }
+
+        .set-number {
+            font-weight: 600;
+            color: var(--medium);
+            min-width: 45px;
+            font-size: 13px;
+        }
+
+        .set-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 6px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .input-label {
+            font-size: 12px;
+            color: var(--medium);
+        }
+
+        .weight-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .weight-btn {
+            padding: 8px 4px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .weight-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .weight-btn.subtract {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .weight-btn.subtract:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        .set-complete-btn {
+            padding: 6px 12px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .set-complete-btn.completed {
+            background: var(--medium);
+        }
+
+        .complete-workout-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .complete-workout-btn:hover {
+            background: #16a34a;
+        }
+
+        .complete-workout-btn:disabled {
+            background: var(--medium);
+            cursor: not-allowed;
+        }
+
+        .rest-timer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 30px;
+            display: none;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 90%;
+        }
+
+        .rest-timer.active {
+            display: flex;
+        }
+
+        .timer-display {
+            font-size: 24px;
+            font-weight: 700;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .timer-btn {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 90;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 24px;
+            color: var(--medium);
+            cursor: pointer;
+        }
+
+        .workout-selector {
+            display: grid;
+            gap: 12px;
+        }
+
+        .workout-option {
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .workout-option:hover {
+            border-color: var(--primary);
+            background: var(--light);
+        }
+
+        .workout-option.selected {
+            border-color: var(--primary);
+            background: #dbeafe;
+        }
+
+        .workout-option.completed {
+            border-color: var(--success);
+            background: #dcfce7;
+        }
+
+        .workout-option.completed::after {
+            content: '✔';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--success);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        .backup-section {
+            background: var(--light);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .backup-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .backup-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .export-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .import-btn {
+            background: var(--success);
+            color: white;
+        }
+
+        .backup-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .history-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .history-date {
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .history-exercise {
+            font-size: 14px;
+            color: var(--medium);
+            margin-bottom: 4px;
+        }
+
+        .history-sets {
+            font-size: 13px;
+            color: var(--medium);
+            padding-left: 16px;
+        }
+
+        @keyframes slideDown {
+            from { 
+                opacity: 0; 
+                transform: translate(-50%, -100%);
+            }
+            to { 
+                opacity: 1; 
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 1; 
+                transform: translate(-50%, 0);
+            }
+            to { 
+                opacity: 0; 
+                transform: translate(-50%, -100%);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .weight-buttons {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            input[type="number"] {
+                width: 55px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>💪 Jeff Nippard PPL Tracker</h1>
+            <div class="subtitle">
+                <span id="currentWeek">Week 1</span>
+                <span>•</span>
+                <span id="currentDay">Push #1</span>
+            </div>
+            <div class="phase-badge" id="currentPhase">Build Phase</div>
+            <div id="deloadWarning" style="display: none;" class="deload-warning">
+                ⚠️ DELOAD WEEK - Train lighter and avoid failure!
+            </div>
+        </div>
+
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('workout')">Workout</button>
+            <button class="tab-button" onclick="switchTab('program')">Program</button>
+            <button class="tab-button" onclick="switchTab('history')">History</button>
+        </div>
+
+        <div class="content">
+            <div id="workout-tab" class="tab-content active">
+                <div class="workout-summary">
+                    <div class="summary-title">Today's Workout Progress</div>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalSets">0</div>
+                            <div class="stat-label">Total Sets</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="completedSets">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalVolume">0</div>
+                            <div class="stat-label">Volume (lbs)</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="previousWorkout"></div>
+                <div id="exercisesList"></div>
+                <button class="complete-workout-btn" id="completeWorkoutBtn" onclick="completeWorkout()">
+                    Complete Workout
+                </button>
+            </div>
+
+            <div id="program-tab" class="tab-content">
+                <div id="programContent"></div>
+            </div>
+
+            <div id="history-tab" class="tab-content">
+                <div id="historyContent"></div>
+            </div>
+        </div>
+
+        <div class="floating-action" onclick="showWorkoutSelector()">📅</div>
+
+        <div class="rest-timer" id="restTimer">
+            <div class="timer-display" id="timerDisplay">0:00</div>
+            <div class="timer-controls">
+                <button class="timer-btn" onclick="addTime(30)">+30s</button>
+                <button class="timer-btn" onclick="skipTimer()">Skip</button>
+            </div>
+        </div>
+
+        <div class="modal" id="workoutModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    Select Workout
+                    <span class="modal-close" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="workout-selector" id="workoutSelector"></div>
+                <button class="btn-primary" onclick="loadSelectedWorkout()">Load Workout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // EXACT Jeff Nippard PPL Program Structure
+        const jeffNippardProgram = {
+            // Weeks 1-4 structure
+            weeks1to4: {
+                "Pull #1": [
+                    {
+                        name: "Cross-Body Lat Pull-Around",
+                        videoUrl: "https://youtu.be/8W67lZ5mwTU",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Half-Kneeling 1-Arm Lat Pulldown", "Neutral-Grip Pullup"],
+                        notes: "Try to keep the cable and your wrist aligned in a straight line throughout the pull. Feel a nice, deep lat stretch at the top."
+                    },
+                    {
+                        name: "Snatch-Grip RDL",
+                        videoUrl: "https://youtu.be/CenC1xVpMvI",
+                        warmupSets: 3,
+                        workingSets: 2,
+                        reps: "8",
+                        earlySetRPE: "~6",
+                        lastSetRPE: "~6-7",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["DB RDL", "Nordic Ham Curl"],
+                        notes: "RPE intentionally low. 1 second pause at the bottom. Stay in bottom 3/4 of ROM."
+                    },
+                    {
+                        name: "Chest-Supported Machine Row",
+                        videoUrl: "https://youtu.be/ijsSiWSzYw0",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Chest-Supported T-Bar Row", "Helms Row"],
+                        notes: "Flare elbows out at ~45° and squeeze shoulder blades together hard."
+                    },
+                    {
+                        name: "Straight-Bar Lat Prayer",
+                        videoUrl: "https://youtu.be/YrcnBlH8XDA",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Machine Lat Pullover", "DB Lat Pullover"],
+                        notes: "Lean forward for stretch at top, stand upright as you squeeze lats at bottom."
+                    },
+                    {
+                        name: "Hammer Preacher Curl",
+                        videoUrl: "https://youtu.be/dEdnC3ca-Yg",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Fat-Grip Preacher Curl", "Hammer Curl"],
+                        notes: "Targets brachialis and forearms. Squeeze hard in middle of handle, curl 3/4 up."
+                    },
+                    {
+                        name: "Lying Paused Rope Face Pull",
+                        videoUrl: "https://youtu.be/jTmI3Q1iQUk",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Rope Face Pull", "Bent-Over Reverse DB Flye"],
+                        notes: "Pause 1-2 seconds in the squeeze. Contract rear delts hard!"
+                    }
+                ],
+                "Push #1": [
+                    {
+                        name: "Cuffed Behind-The-Back Lateral Raise",
+                        videoUrl: "https://youtu.be/fjiOCmFljDM",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Myo-reps",
+                        rest: "~2-3 min",
+                        substitutions: ["Cross-Body Cable Y-Raise", "DB Lateral Raise"],
+                        notes: "Raise cables up and out in 'Y' motion. Connect with middle delts."
+                    },
+                    {
+                        name: "Low Incline Smith Machine Press",
+                        videoUrl: "https://youtu.be/2ITgeRy2z2s",
+                        warmupSets: 3,
+                        workingSets: 4,
+                        reps: "8-10",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "~9-10",
+                        technique: "Pec Static Stretch (30 sec)",
+                        rest: "~3-4 min",
+                        substitutions: ["Low Incline Machine Press", "Low Incline DB Press"],
+                        notes: "Set bench at ~15° incline. 1 second pause on chest each rep."
+                    },
+                    {
+                        name: "Pec Deck (w/ Integrated Partials)",
+                        videoUrl: "https://youtu.be/NPa8YvUg4CM",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "Integrated Partials",
+                        rest: "~2-3 min",
+                        substitutions: ["Bent-Over Cable Pec Flye", "DB Flye"],
+                        notes: "Alternate full-ROM and half-ROM reps in stretched position."
+                    },
+                    {
+                        name: "Overhead Cable Triceps Extension (Bar)",
+                        videoUrl: "https://youtu.be/9_I1PqZAjdA",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "8",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Dropset",
+                        rest: "~2-3 min",
+                        substitutions: ["Overhead Cable Extension (Rope)", "DB Skull Crusher"],
+                        notes: "Feel stretch on triceps. 1 second pause in stretch."
+                    },
+                    {
+                        name: "Triceps Pressdown (Bar)",
+                        videoUrl: "https://youtu.be/o4eazahiXQw",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "8-10",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Dropset",
+                        rest: "~1-2 min",
+                        substitutions: ["Triceps Pressdown (Rope)", "Close-Grip Assisted Dip"],
+                        notes: "Heavy weight. Slight forward lean is fine."
+                    },
+                    {
+                        name: "Cable Crunch",
+                        videoUrl: "https://youtu.be/epBrpaGHMcg",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Myo-reps",
+                        rest: "~1-2 min",
+                        substitutions: ["Machine Crunch", "Plate-Weighted Crunch"],
+                        notes: "Round lower back as you crunch. Mind-muscle connection with abs."
+                    }
+                ],
+                "Legs #1": [
+                    {
+                        name: "Seated Leg Curl",
+                        videoUrl: "https://youtu.be/yv0aAY7M1mk",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Lying Leg Curl", "Nordic Ham Curl"],
+                        notes: "Lean forward over machine for maximum hamstring stretch."
+                    },
+                    {
+                        name: "Machine Hip Adduction",
+                        videoUrl: "https://youtu.be/FMSCZYu1JhE",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Cable Hip Adduction", "Copenhagen Hip Adduction"],
+                        notes: "Mind-muscle connection with inner thighs. Great for adding thigh mass!"
+                    },
+                    {
+                        name: "Hack Squat",
+                        videoUrl: "https://youtu.be/TWUnnDK8rck",
+                        warmupSets: 4,
+                        workingSets: 3,
+                        reps: "4, 6, 8",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9",
+                        technique: "N/A",
+                        rest: "~3-4 min",
+                        substitutions: ["Machine Squat", "Front Squat"],
+                        notes: "Reverse pyramid: Set 1 for 4 reps (heaviest), Set 2 for 6 (-10-15%), Set 3 for 8 (-10-15%)."
+                    },
+                    {
+                        name: "Leg Extension",
+                        videoUrl: "https://youtu.be/uFbNtqP966A",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["DB Step-Up", "Reverse Nordic"],
+                        notes: "Seat back as far as possible. 2-3 second negative."
+                    },
+                    {
+                        name: "Leg Press Calf Press",
+                        videoUrl: "https://youtu.be/S6DTPNZ_-F4",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Calf Static Stretch (30 sec)",
+                        rest: "~1-2 min",
+                        substitutions: ["Donkey Calf Raise", "Seated Calf Raise"],
+                        notes: "1-2 second pause at bottom. Roll ankle back and forth on balls of feet."
+                    }
+                ],
+                "Arms & Weak Point": [
+                    {
+                        name: "Weak Point Exercise 1",
+                        videoUrl: "",
+                        warmupSets: 3,
+                        workingSets: 3,
+                        reps: "8-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~1-3 min",
+                        substitutions: ["See Weak Point Table"],
+                        notes: "Choose based on your weak point. For shoulders: Cuffed Behind-The-Back Lateral Raise"
+                    },
+                    {
+                        name: "Weak Point Exercise 2 (optional)",
+                        videoUrl: "",
+                        warmupSets: 3,
+                        workingSets: 2,
+                        reps: "8-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~1-3 min",
+                        substitutions: ["See Weak Point Table"],
+                        notes: "Only if weak point is recovered. For shoulders: Machine Shoulder Press"
+                    },
+                    {
+                        name: "Bayesian Cable Curl",
+                        videoUrl: "https://youtu.be/CWH5J_7kzjM",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["DB Incline Curl", "DB Scott Curl"],
+                        notes: "If imbalance, do 1 arm at a time starting with weaker."
+                    },
+                    {
+                        name: "Seated DB French Press",
+                        videoUrl: "https://youtu.be/5KX0EjOTMaI",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["EZ-bar Skull Crusher", "DB Skull Crusher"],
+                        notes: "Both palms under dumbbell head. Deep stretch at bottom."
+                    },
+                    {
+                        name: "Bottom-2/3 Constant Tension Preacher Curl",
+                        videoUrl: "https://youtu.be/vHBedP8oeCA",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Bottom-2/3 EZ-Bar Curl", "Spider Curl"],
+                        notes: "Stay in bottom 2/3 of curl. Constant tension, no pausing."
+                    },
+                    {
+                        name: "Cable Triceps Kickback",
+                        videoUrl: "https://youtu.be/oRxTKRtP8RE",
+                        warmupSets: 0,
+                        workingSets: 2,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Bench Dip", "DB Triceps Kickback"],
+                        notes: "Shoulder positioned back behind torso in full squeeze."
+                    },
+                    {
+                        name: "Roman Chair Leg Raise",
+                        videoUrl: "https://youtu.be/irOzFVqJ0IE",
+                        warmupSets: 0,
+                        workingSets: 3,
+                        reps: "10-20",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Hanging Leg Raise", "Reverse Crunch"],
+                        notes: "Allow lower back to round as you curl legs up. Go to RPE 9-10."
+                    }
+                ],
+                "Pull #2": [
+                    {
+                        name: "Super-ROM Overhand Cable Row",
+                        videoUrl: "https://youtu.be/a7AH8W7dQIw",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Overhand Machine Row", "Arm-Out Single-Arm DB Row"],
+                        notes: "Wide grip pulldown bar. Lean forward on negative, upright on finish."
+                    },
+                    {
+                        name: "Arms-Extended 45° Hyperextension",
+                        videoUrl: "https://youtu.be/PrwC-5NTCCs",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "10-20",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Prisoner 45° Hyperextension", "Good Morning (Light)"],
+                        notes: "Arms extended at 45°. Feel burn in mid and lower back."
+                    },
+                    {
+                        name: "Lean-Back Lat Pulldown",
+                        videoUrl: "https://youtu.be/Zjzt4MRbAlc",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Dropset",
+                        rest: "~2-3 min",
+                        substitutions: ["Lean-Back Machine Pulldown", "Medium-Grip Pull Up"],
+                        notes: "Start straight, lean back 15-30° as you pull. Touch chest softly."
+                    },
+                    {
+                        name: "Inverse DB Zottman Curl",
+                        videoUrl: "https://youtu.be/jBIvbpyb99M",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Slow-Eccentric DB Curl", "Hammer Curl"],
+                        notes: "Hammer curl up, palms-up grip down."
+                    },
+                    {
+                        name: "Cable Reverse Flye (Mechanical Dropset)",
+                        videoUrl: "https://youtu.be/nN5RV1arpfM",
+                        warmupSets: 0,
+                        workingSets: 3,
+                        reps: "5,4,3+",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Mechanical Dropset",
+                        rest: "~1-2 min",
+                        substitutions: ["Reverse Pec Deck", "Bent-Over Reverse DB Flye"],
+                        notes: "3 steps back for 5 reps, 1 step forward for 4, 1 step forward for 3+."
+                    },
+                    {
+                        name: "Cable Paused Shrug-In",
+                        videoUrl: "https://youtu.be/Hy6f1Lz_PiA",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Machine Shrug", "DB Shrug"],
+                        notes: "Shrug up to your ears. 1-2 sec pause at top and bottom."
+                    }
+                ],
+                "Push #2": [
+                    {
+                        name: "Machine Shoulder Press",
+                        videoUrl: "https://youtu.be/SCQVmN1gYsk",
+                        warmupSets: 3,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Dropset",
+                        rest: "~2-3 min",
+                        substitutions: ["Cable Shoulder Press", "Seated DB Shoulder Press"],
+                        notes: "Elbows break at least 90°. Mind-muscle connection with delts."
+                    },
+                    {
+                        name: "Cross-Body Cable Y-Raise",
+                        videoUrl: "https://youtu.be/64RFJSCJuN8",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Machine Lateral Raise", "DB Lateral Raise"],
+                        notes: "Think 'drawing a sword'. Sweep arm up, out and across body."
+                    },
+                    {
+                        name: "Paused Assisted Dip",
+                        videoUrl: "https://youtu.be/RyGOGviYWts",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Decline Machine Chest Press", "Decline Barbell Press"],
+                        notes: "Slow 2-3 second negative. 1-2 second pause at bottom."
+                    },
+                    {
+                        name: "Low-Incline Dumbbell Flye",
+                        videoUrl: "https://youtu.be/gfIx0U5bTMA",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "15-20",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Low-To-High Cable Crossover", "Pec Deck"],
+                        notes: "Deep stretch at bottom. Stay in bottom 3/4 of ROM."
+                    },
+                    {
+                        name: "Katana Triceps Extension",
+                        videoUrl: "https://youtu.be/R7f45Mv7yyg",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Overhead Cable Extension (Rope)", "DB French Press"],
+                        notes: "Flare elbows at 45°. Keep elbows locked in place."
+                    },
+                    {
+                        name: "Ab Wheel Rollout",
+                        videoUrl: "https://youtu.be/gGTgyCU9gcg",
+                        warmupSets: 0,
+                        workingSets: 3,
+                        reps: "10-20",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Swiss Ball Rollout", "LLPT Plank"],
+                        notes: "Use abs to lower and pull back up. Progress ROM weekly."
+                    }
+                ],
+                "Legs #2": [
+                    {
+                        name: "Lying Leg Curl",
+                        videoUrl: "https://youtu.be/sX4tGtcc62k",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~1-2 min",
+                        substitutions: ["Seated Leg Curl", "Nordic Ham Curl"],
+                        notes: "Set machine for biggest stretch. Prevent butt from popping up."
+                    },
+                    {
+                        name: "Leg Press",
+                        videoUrl: "https://youtu.be/1yKAQLVV_XI",
+                        warmupSets: 4,
+                        workingSets: 3,
+                        reps: "8",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "~8-9",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Belt Squat", "High-Bar Back Squat"],
+                        notes: "Feet lower for quad focus. Deep without back rounding. Slight pause at bottom."
+                    },
+                    {
+                        name: "Smith Machine Lunge",
+                        videoUrl: "https://youtu.be/SEjKxJGg_C8",
+                        warmupSets: 3,
+                        workingSets: 2,
+                        reps: "8",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Barbell Lunge", "DB Step Up"],
+                        notes: "2 sets each leg. Minimize back leg contribution."
+                    },
+                    {
+                        name: "Machine Hip Adduction",
+                        videoUrl: "https://youtu.be/FMSCZYu1JhE",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Cable Hip Adduction", "Copenhagen Hip Adduction"],
+                        notes: "Mind-muscle connection with inner thighs."
+                    },
+                    {
+                        name: "Sissy Squat",
+                        videoUrl: "https://youtu.be/eWAjlO4FWPQ",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~7-8",
+                        lastSetRPE: "~7-8",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Leg Extension", "Goblet Squat"],
+                        notes: "Come up onto toes, knees forward past toes. Safe for knees."
+                    },
+                    {
+                        name: "Standing Calf Raise",
+                        videoUrl: "https://youtu.be/6lR2JdxUh7w",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Calf Static Stretch (30 sec)",
+                        rest: "~1-2 min",
+                        substitutions: ["Leg Press Calf Press", "Donkey Calf Raise"],
+                        notes: "1-2 second pause at bottom. Roll ankle on balls of feet."
+                    }
+                ]
+            },
+            // Weeks 6-10 structure (Building Phase/Novelty Phase)
+            weeks6to10: {
+                "Pull #1": [
+                    {
+                        name: "Lat-Focused Cable Row",
+                        videoUrl: "https://youtu.be/w11Kqjm-ycE",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Lat Static Stretch (30 sec)",
+                        rest: "~2-3 min",
+                        substitutions: ["Half-Kneeling 1-Arm Lat Pulldown", "Elbows-In 1-Arm DB Row"],
+                        notes: "Keep torso locked. Drive elbows down and back. Keep elbows tucked."
+                    },
+                    {
+                        name: "Paused Barbell RDL",
+                        videoUrl: "https://youtu.be/74uXdbCYZQY",
+                        warmupSets: 3,
+                        workingSets: 2,
+                        reps: "8",
+                        earlySetRPE: "~6-7",
+                        lastSetRPE: "~7-8",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Paused DB RDL", "Glute-Ham Raise"],
+                        notes: "RPE intentionally low. 1 second pause at bottom. Stay in bottom 3/4 ROM."
+                    },
+                    {
+                        name: "Chest-Supported T-Bar Row + Kelso Shrug",
+                        videoUrl: "https://youtu.be/qsmjaYao9pA",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10 + 4-6",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Machine Chest-Supported Row + Kelso Shrug", "Incline Chest-Supported DB Row + Kelso Shrug"],
+                        notes: "Do 8-10 reps normal row, then 4-6 Kelso Shrugs (squeeze shoulder blades without rowing)."
+                    },
+                    {
+                        name: "1-Arm Lat Pull-In",
+                        videoUrl: "https://youtu.be/RMGuHVQKOms",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Wide-Grip Lat Pulldown", "Wide-Grip Band-Assisted Pull-Up"],
+                        notes: "Pull cable in from side. Mind-muscle connection with lats. Palpate lats if it helps."
+                    },
+                    {
+                        name: "N1-Style Short-Head Curl",
+                        videoUrl: "https://youtu.be/qpzwJd7mr3Y",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["DB Concentration Curl", "DB Preacher Curl"],
+                        notes: "Brace against knee, curl across body toward opposite shoulder."
+                    },
+                    {
+                        name: "Reverse Pec Deck (w/ Integrated Partials)",
+                        videoUrl: "https://youtu.be/KDeYqB9GYeg",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Integrated Partials",
+                        rest: "~2-3 min",
+                        substitutions: ["Reverse Cable Flye (w/ Integrated Partials)", "Bent-Over Reverse DB Flye (w/ Integrated Partials)"],
+                        notes: "Sweep weight out instead of pulling back. Alternate full and half ROM reps."
+                    }
+                ],
+                "Push #1": [
+                    {
+                        name: "Cuffed Behind-The-Back Lateral Raise",
+                        videoUrl: "https://youtu.be/fjiOCmFljDM",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Myo-reps",
+                        rest: "~2-3 min",
+                        substitutions: ["Cross-Body Cable Y-Raise", "DB Lateral Raise"],
+                        notes: "Raise cables up in 'Y' motion. Connect with middle delt fibers."
+                    },
+                    {
+                        name: "Low Incline DB Press",
+                        videoUrl: "https://youtu.be/YmlMsvNGTKA",
+                        warmupSets: 3,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~3-4 min",
+                        substitutions: ["Low Incline Machine Press", "Low Incline Barbell Press"],
+                        notes: "~15° incline. Slight elbow tuck on negative, flare as you push. Constant tension."
+                    },
+                    {
+                        name: "Dual-Cable Triceps Press",
+                        videoUrl: "https://youtu.be/SNcQJjXWa_E",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Overhead Cable Triceps Extension (Bar)", "DB Skull Crusher"],
+                        notes: "Hold cables without handle at chin level. Press forward, not up."
+                    },
+                    {
+                        name: "Bent-Over Cable Pec Flye (w/ Integrated Partials)",
+                        videoUrl: "https://youtu.be/DKaKmnB0BO8",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "Integrated Partials",
+                        rest: "~2-3 min",
+                        substitutions: ["Pec Deck (w/ Integrated Partials)", "DB Flye (w/ Integrated Partials)"],
+                        notes: "Torso parallel to floor, flye down toward floor. Alternate full and half ROM reps."
+                    },
+                    {
+                        name: "Deficit Pushup",
+                        videoUrl: "https://youtu.be/3AZSudcQ1N0",
+                        warmupSets: 1,
+                        workingSets: 1,
+                        reps: "AMRAP",
+                        earlySetRPE: "N/A",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Close-Grip Push Up", "Bodyweight Dip"],
+                        notes: "Slow negative, deep stretch at bottom, explode up."
+                    },
+                    {
+                        name: "Cable Crunch",
+                        videoUrl: "https://youtu.be/epBrpaGHMcg",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Myo-reps",
+                        rest: "~1-2 min",
+                        substitutions: ["Machine Crunch", "Plate-Weighted Crunch"],
+                        notes: "Round lower back as you crunch. Mind-muscle connection with 6-pack."
+                    }
+                ],
+                "Legs #1": [
+                    {
+                        name: "Seated Leg Curl",
+                        videoUrl: "https://youtu.be/yv0aAY7M1mk",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Lying Leg Curl", "Nordic Ham Curl"],
+                        notes: "Lean forward for maximum hamstring stretch."
+                    },
+                    {
+                        name: "Machine Hip Adduction",
+                        videoUrl: "https://youtu.be/FMSCZYu1JhE",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Cable Hip Adduction", "Copenhagen Hip Adduction"],
+                        notes: "Mind-muscle connection with inner thighs."
+                    },
+                    {
+                        name: "Smith Machine Squat",
+                        videoUrl: "https://youtu.be/lWIEZ6NxPMk",
+                        warmupSets: 4,
+                        workingSets: 3,
+                        reps: "4, 6, 8",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9",
+                        technique: "N/A",
+                        rest: "~3-4 min",
+                        substitutions: ["Machine Squat", "DB Bulgarian Split Squat"],
+                        notes: "Reverse pyramid: Set 1 for 4 reps, Set 2 for 6 (-10-15%), Set 3 for 8 (-10-15%)."
+                    },
+                    {
+                        name: "Leg Extension",
+                        videoUrl: "https://youtu.be/uFbNtqP966A",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["DB Step-Up", "Reverse Nordic"],
+                        notes: "Seat back as far as possible. 2-3 second negative."
+                    },
+                    {
+                        name: "DB Calf Jumps",
+                        videoUrl: "https://youtu.be/JkY3nBTbRac",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Leg Press Calf Jumps", "Standing Calf Raise"],
+                        notes: "Hold dumbbell, jumping motion without leaving floor. Use calves/ankles mainly."
+                    }
+                ],
+                "Arms & Weak Point": [
+                    {
+                        name: "Weak Point Exercise 1",
+                        videoUrl: "",
+                        warmupSets: 3,
+                        workingSets: 3,
+                        reps: "8-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~1-3 min",
+                        substitutions: ["See Weak Point Table"],
+                        notes: "Choose based on your weak point."
+                    },
+                    {
+                        name: "Weak Point Exercise 2 (optional)",
+                        videoUrl: "",
+                        warmupSets: 3,
+                        workingSets: 2,
+                        reps: "8-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~1-3 min",
+                        substitutions: ["See Weak Point Table"],
+                        notes: "Only if weak point is recovered."
+                    },
+                    {
+                        name: "Slow-Eccentric EZ-Bar Skull Crusher",
+                        videoUrl: "https://youtu.be/opVMIWzaNFY",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Slow-Eccentric DB Skull Crusher", "Slow-Eccentric DB French Press"],
+                        notes: "3-4 second negative. Arc bar back behind head. Use inside grip."
+                    },
+                    {
+                        name: "Slow-Eccentric Bayesian Curl",
+                        videoUrl: "https://youtu.be/Kf2kXBoIgM0",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Slow-Eccentric DB Incline Curl", "Slow-Eccentric DB Scott Curl"],
+                        notes: "3-4 second negative. Slight pause at bottom to emphasize stretch."
+                    },
+                    {
+                        name: "Triceps Diverging Pressdown (Long Rope or 2 Ropes)",
+                        videoUrl: "https://youtu.be/20tbMlP71Nc",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Cable Triceps Kickback", "DB Triceps Kickback"],
+                        notes: "Lean forward slightly, flare elbows out, arms back in line with torso."
+                    },
+                    {
+                        name: "Reverse-Grip Cable Curl",
+                        videoUrl: "https://youtu.be/xtZvYrfw2Is",
+                        warmupSets: 0,
+                        workingSets: 2,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Reverse-Grip EZ-Bar Curl", "Reverse-Grip DB Curl"],
+                        notes: "Palms facing down. Works forearms, brachialis and biceps."
+                    },
+                    {
+                        name: "Roman Chair Leg Raise",
+                        videoUrl: "https://youtu.be/irOzFVqJ0IE",
+                        warmupSets: 0,
+                        workingSets: 3,
+                        reps: "10-20",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Hanging Leg Raise", "Reverse Crunch"],
+                        notes: "Allow lower back to round. Go to RPE 9-10 with controlled form."
+                    }
+                ],
+                "Pull #2": [
+                    {
+                        name: "Dual-Handle Lat Pulldown (Mid-back + Lats)",
+                        videoUrl: "https://youtu.be/NwQ5Ch5t5Vk",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Overhand Lat Pulldown", "Pull-Up"],
+                        notes: "Lean back ~15°, drive elbows down while squeezing shoulder blades. Mix of lats and mid-traps."
+                    },
+                    {
+                        name: "Arms-Extended 45° Hyperextension",
+                        videoUrl: "https://youtu.be/PrwC-5NTCCs",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "10-20",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Prisoner 45° Hyperextension", "Good Morning (Light Weight)"],
+                        notes: "Arms extended at 45°. Feel burn in mid and lower back."
+                    },
+                    {
+                        name: "Chest-Supported Machine Row",
+                        videoUrl: "https://youtu.be/ijsSiWSzYw0",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~2-3 min",
+                        substitutions: ["Chest-Supported T-Bar Row", "Helms Row"],
+                        notes: "Flare elbows out at ~45°. Squeeze shoulder blades together hard."
+                    },
+                    {
+                        name: "Concentration Cable Curl",
+                        videoUrl: "https://youtu.be/BFZyW_7ld0c",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["DB Concentration Curl", "DB Preacher Curl"],
+                        notes: "Elbow against knee, strict form curls."
+                    },
+                    {
+                        name: "Rear Delt 45° Cable Flye",
+                        videoUrl: "https://youtu.be/8iXorduqXC8",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["DB Rear Delt Swing", "Bent-Over Reverse DB Flye"],
+                        notes: "Pull one arm at a time, brace with other hand. Align arm and cable at bottom."
+                    }
+                ],
+                "Push #2": [
+                    {
+                        name: "Seated DB Shoulder Press",
+                        videoUrl: "https://youtu.be/B8PB5RPhTWQ",
+                        warmupSets: 3,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Seated Barbell Shoulder Press", "Standing DB Arnold Press"],
+                        notes: "Slightly rotate dumbbells in on negative, flare elbows out as you push."
+                    },
+                    {
+                        name: "Cross-Body Cable Y-Raise",
+                        videoUrl: "https://youtu.be/64RFJSCJuN8",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Myo-reps",
+                        rest: "~2-3 min",
+                        substitutions: ["Machine Lateral Raise", "DB Lateral Raise"],
+                        notes: "Think 'drawing a sword'. Sweep arm up, out and across body."
+                    },
+                    {
+                        name: "Decline Machine Chest Press",
+                        videoUrl: "https://youtu.be/AABuMGK9H28",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Decline Smith Machine Press", "Decline Barbell Press"],
+                        notes: "Feel pecs stretching apart on negative. Mind-muscle connection with lower pecs."
+                    },
+                    {
+                        name: "Overhead Cable Triceps Extension (Bar)",
+                        videoUrl: "https://youtu.be/9_I1PqZAjdA",
+                        warmupSets: 1,
+                        workingSets: 2,
+                        reps: "8-10",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Dropset",
+                        rest: "~2-3 min",
+                        substitutions: ["Overhead Cable Triceps Extension (Rope)", "DB Skull Crusher"],
+                        notes: "Feel nasty stretch on triceps. 1 second pause in stretch."
+                    },
+                    {
+                        name: "Stomach Vacuums",
+                        videoUrl: "https://youtu.be/dyFeDqVApFU",
+                        warmupSets: 0,
+                        workingSets: 2,
+                        reps: "10-15 sec hold",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "~9-10",
+                        technique: "N/A",
+                        rest: "~1 min",
+                        substitutions: ["LLPT Plank", "Ab Wheel Rollout"],
+                        notes: "Suck stomach in and hold for 10-15 seconds, repeat 2x."
+                    },
+                    {
+                        name: "Super-ROM DB Lateral Raise",
+                        videoUrl: "https://youtu.be/nW5pGot-Hok",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "12-15",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Cable Upright Row", "DB Lateral Raise"],
+                        notes: "Raise hands overhead. Uses upper traps after breaking parallel. Point thumb up if painful."
+                    }
+                ],
+                "Legs #2": [
+                    {
+                        name: "Lying Leg Curl",
+                        videoUrl: "https://youtu.be/sX4tGtcc62k",
+                        warmupSets: 2,
+                        workingSets: 3,
+                        reps: "8-10",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "Long-length Partials (last set)",
+                        rest: "~1-2 min",
+                        substitutions: ["Seated Leg Curl", "Nordic Ham Curl"],
+                        notes: "Set machine for biggest stretch. Prevent butt from popping up."
+                    },
+                    {
+                        name: "Smith Machine Reverse Lunge",
+                        videoUrl: "https://youtu.be/D0KZo_gBsw0",
+                        warmupSets: 4,
+                        workingSets: 3,
+                        reps: "8",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "~8-9",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["DB Reverse Lunge", "DB Walking Lunge"],
+                        notes: "Set leg back on negative, drive up with front leg. Minimize back leg assistance."
+                    },
+                    {
+                        name: "Leg Extension",
+                        videoUrl: "https://youtu.be/uFbNtqP966A",
+                        warmupSets: 2,
+                        workingSets: 4,
+                        reps: "15-20",
+                        earlySetRPE: "~9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Reverse Nordic", "Sissy Squats"],
+                        notes: "Seat back as far as possible. 2-3 second negative."
+                    },
+                    {
+                        name: "Machine Hip Adduction",
+                        videoUrl: "https://youtu.be/FMSCZYu1JhE",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Cable Hip Adduction", "Copenhagen Hip Adduction"],
+                        notes: "Mind-muscle connection with inner thighs."
+                    },
+                    {
+                        name: "Machine Hip Abduction",
+                        videoUrl: "https://youtu.be/pozooPg6PBE",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~1-2 min",
+                        substitutions: ["Cable Hip Abduction", "Lateral Band Walk"],
+                        notes: "Use pads to increase ROM if possible. Lean forward, grab rails for glute stretch."
+                    },
+                    {
+                        name: "Standing Calf Raise",
+                        videoUrl: "https://youtu.be/6lR2JdxUh7w",
+                        warmupSets: 1,
+                        workingSets: 3,
+                        reps: "10-12",
+                        earlySetRPE: "~9-10",
+                        lastSetRPE: "10",
+                        technique: "Calf Static Stretch (30 sec)",
+                        rest: "~1-2 min",
+                        substitutions: ["Seated Calf Raise", "Leg Press Calf Press"],
+                        notes: "1-2 second pause at bottom. Roll ankle on balls of feet."
+                    }
+                ]
+            }
+        };
+
+        // Create full workout program structure
+        const workoutProgram = { weeks: [] };
+
+        // App State
+        let currentWeek = 1;
+        let currentWorkoutType = "Push #1";
+        let workoutData = {};
+        let workoutHistory = [];
+        let personalRecords = {};
+        let restTimerInterval = null;
+        let restTimeRemaining = 0;
+        let selectedWorkoutType = "";
+
+        // Initialize program
+        function initializeProgram() {
+            // Build weeks 1-10
+            for (let week = 1; week <= 10; week++) {
+                const isDeload = week === 5;
+                const phase = week <= 5 ? "Build Phase" : "Novelty Phase";
+                
+                let workouts;
+                
+                if (week === 1 || week === 3) {
+                    // Week 1 and 3 use base weeks 1-4 structure
+                    workouts = JSON.parse(JSON.stringify(jeffNippardProgram.weeks1to4));
+                } else if (week === 2) {
+                    // Week 2 is identical except Push #1 has Smith Machine JM Press
+                    workouts = JSON.parse(JSON.stringify(jeffNippardProgram.weeks1to4));
+                    // Add Smith Machine JM Press to Push #1
+                    workouts["Push #1"].splice(5, 0, {
+                        name: "Smith Machine JM Press",
+                        videoUrl: "https://youtu.be/zv5bwzjN1Q4",
+                        warmupSets: 2,
+                        workingSets: 2,
+                        reps: "15-20",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Barbell JM Press", "Close-Grip Bench Press"],
+                        notes: "Lower bar to chin. Combination of skull crusher and close-grip bench."
+                    });
+                } else if (week === 4) {
+                    // Week 4 is like Week 2 but JM Press has 3 working sets
+                    workouts = JSON.parse(JSON.stringify(jeffNippardProgram.weeks1to4));
+                    workouts["Push #1"].splice(5, 0, {
+                        name: "Smith Machine JM Press",
+                        videoUrl: "https://youtu.be/zv5bwzjN1Q4",
+                        warmupSets: 2,
+                        workingSets: 3, // Changed to 3
+                        reps: "15-20",
+                        earlySetRPE: "~8-9",
+                        lastSetRPE: "10",
+                        technique: "N/A",
+                        rest: "~2-3 min",
+                        substitutions: ["Barbell JM Press", "Close-Grip Bench Press"],
+                        notes: "Lower bar to chin. Combination of skull crusher and close-grip bench."
+                    });
+                } else if (week === 5) {
+                    // Deload week - reduce volume and intensity
+                    workouts = JSON.parse(JSON.stringify(jeffNippardProgram.weeks1to4));
+                    Object.keys(workouts).forEach(workoutType => {
+                        workouts[workoutType].forEach(exercise => {
+                            exercise.workingSets = Math.max(1, exercise.workingSets - 1);
+                            exercise.earlySetRPE = "~7-8";
+                            exercise.lastSetRPE = "8";
+                        });
+                    });
+                } else {
+                    // Weeks 6-10 use the Building Phase structure
+                    workouts = JSON.parse(JSON.stringify(jeffNippardProgram.weeks6to10));
+                }
+                
+                workoutProgram.weeks.push({
+                    weekNum: week,
+                    phase: phase,
+                    isDeload: isDeload,
+                    workouts: workouts
+                });
+            }
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProgram();
+            loadFromStorage();
+            loadCurrentWorkout();
+            updateUI();
+        });
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('pplWorkoutData');
+            if (saved) {
+                workoutData = JSON.parse(saved);
+            }
+            
+            const savedHistory = localStorage.getItem('pplWorkoutHistory');
+            if (savedHistory) {
+                workoutHistory = JSON.parse(savedHistory);
+            }
+            
+            const savedPRs = localStorage.getItem('personalRecords');
+            if (savedPRs) {
+                personalRecords = JSON.parse(savedPRs);
+            }
+            
+            const savedWeek = localStorage.getItem('currentWeek');
+            if (savedWeek) {
+                currentWeek = parseInt(savedWeek);
+            }
+            
+            const savedWorkout = localStorage.getItem('currentWorkoutType');
+            if (savedWorkout) {
+                currentWorkoutType = savedWorkout;
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('pplWorkoutData', JSON.stringify(workoutData));
+            localStorage.setItem('pplWorkoutHistory', JSON.stringify(workoutHistory));
+            localStorage.setItem('personalRecords', JSON.stringify(personalRecords));
+            localStorage.setItem('currentWeek', currentWeek.toString());
+            localStorage.setItem('currentWorkoutType', currentWorkoutType);
+        }
+
+        function loadCurrentWorkout() {
+            const week = workoutProgram.weeks[currentWeek - 1];
+            if (!week) return;
+            
+            const workout = week.workouts[currentWorkoutType];
+            if (!workout) return;
+            
+            // Show previous workout data
+            showPreviousWorkout();
+            
+            const exercisesContainer = document.getElementById('exercisesList');
+            exercisesContainer.innerHTML = '';
+            
+            let totalSets = 0;
+            let completedSets = 0;
+            
+            workout.forEach((exercise, index) => {
+                totalSets += exercise.workingSets;
+                const exerciseCard = createExerciseCard(exercise, index);
+                exercisesContainer.appendChild(exerciseCard);
+                
+                // Count completed working sets
+                const key = `week${currentWeek}_${currentWorkoutType}_ex${index}`;
+                if (workoutData[key] && workoutData[key].working) {
+                    completedSets += workoutData[key].working.filter(set => set && set.completed).length;
+                }
+            });
+            
+            updateSummary(totalSets, completedSets);
+            updateCompleteButton();
+        }
+
+        function showPreviousWorkout() {
+            const previousContainer = document.getElementById('previousWorkout');
+            
+            // Find last time this workout was done
+            const previousWorkouts = workoutHistory.filter(h => 
+                h.workoutType === currentWorkoutType && 
+                h.completedAt
+            ).sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+            
+            if (previousWorkouts.length > 0) {
+                const last = previousWorkouts[0];
+                const date = new Date(last.completedAt).toLocaleDateString();
+                
+                previousContainer.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 4px solid var(--warning); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                        <strong>📊 Last ${currentWorkoutType}: ${date}</strong>
+                        <div>Total Volume: ${last.totalVolume.toLocaleString()} lbs • ${last.totalSets} sets completed</div>
+                    </div>
+                `;
+            } else {
+                previousContainer.innerHTML = '';
+            }
+        }
+
+        function createExerciseCard(exercise, exerciseIndex) {
+            const card = document.createElement('div');
+            card.className = 'exercise-card';
+            card.id = `exercise-${exerciseIndex}`;
+            
+            const header = document.createElement('div');
+            header.className = 'exercise-header';
+            header.onclick = () => toggleExercise(exerciseIndex);
+            
+            header.innerHTML = `
+                <div class="exercise-number">${exerciseIndex + 1}</div>
+                <div class="exercise-name">${exercise.name}</div>
+                <div class="exercise-meta">
+                    ${exercise.technique !== 'N/A' ? `<span class="technique-badge">${exercise.technique}</span>` : ''}
+                    <span class="meta-item">🏋️ ${exercise.workingSets} x ${exercise.reps}</span>
+                    <span class="meta-item">⏱️ ${exercise.rest}</span>
+                    <span class="meta-item">💯 RPE ${exercise.lastSetRPE}</span>
+                </div>
+            `;
+            
+            const content = document.createElement('div');
+            content.className = 'exercise-content';
+            
+            // Add video link if available
+            if (exercise.videoUrl) {
+                content.innerHTML += `
+                    <a href="${exercise.videoUrl}" target="_blank" class="video-link">
+                        🎥 Watch Video Demo
+                    </a>
+                `;
+            }
+            
+            // Show previous performance and PR for this exercise
+            const previousPerformance = getPreviousPerformance(exercise.name);
+            const prKey = `${exercise.name}_pr`;
+            const currentPR = personalRecords[prKey];
+            
+            if (currentPR) {
+                content.innerHTML += `
+                    <div class="pr-history">
+                        <strong>🏆 Personal Record:</strong> ${currentPR.weight} lbs × ${currentPR.reps} reps
+                        <span class="pr-badge">PR</span>
+                        <div style="font-size: 11px; color: #92400e; margin-top: 4px;">
+                            Set on ${new Date(currentPR.date).toLocaleDateString()}
+                        </div>
+                    </div>
+                `;
+            } else if (previousPerformance) {
+                content.innerHTML += `
+                    <div class="previous-performance">
+                        <strong>Previous Best:</strong> ${previousPerformance}
+                    </div>
+                `;
+            }
+            
+            // Add intensity technique details to notes
+            let fullNotes = exercise.notes || '';
+            if (exercise.technique && exercise.technique !== 'N/A') {
+                const techniqueDetails = {
+                    "Myo-reps": "Perform rest-pause sets after reaching failure",
+                    "Dropset": "Drop weight immediately after last set",
+                    "Integrated Partials": "Alternate full ROM and partial ROM reps (on all sets)",
+                    "Long-length Partials (last set)": "Perform partials in stretched position (on all reps of last set)",
+                    "Mechanical Dropset": "Change grip/stance to continue set",
+                    "Pec Static Stretch (30 sec)": "Hold stretch for 30 seconds after last set",
+                    "Calf Static Stretch (30 sec)": "Hold calf stretch for 30 seconds after last set",
+                    "Lat Static Stretch (30 sec)": "Hold lat stretch for 30 seconds after last set",
+                    "21s": "7 bottom half + 7 top half + 7 full reps"
+                };
+                
+                const techniqueNote = techniqueDetails[exercise.technique] || exercise.technique;
+                fullNotes = `<strong>🎯 ${exercise.technique}:</strong> ${techniqueNote}<br><br>${fullNotes}`;
+            }
+            
+            if (fullNotes) {
+                content.innerHTML += `
+                    <div class="exercise-notes">
+                        <strong>📝 Form Tips:</strong> ${fullNotes}
+                    </div>
+                `;
+            }
+            
+            // Add video links for substitutions
+            const substitutionVideos = {
+                "Half-Kneeling 1-Arm Lat Pulldown": "https://youtu.be/r8K1Fkch5go",
+                "Neutral-Grip Pullup": "https://youtu.be/b0ypSz63UGo",
+                "DB RDL": "https://youtu.be/TZAmthQJkh8",
+                "Nordic Ham Curl": "https://youtu.be/fzpYiRtzmFA",
+                "Chest-Supported T-Bar Row": "https://youtu.be/q8qlHwcuOtc",
+                "Helms Row": "https://youtu.be/DjO2G9DIerQ",
+                "Machine Lat Pullover": "https://youtu.be/YT0K0PBl3nk",
+                "DB Lat Pullover": "https://youtu.be/iaRefVKBH8M",
+                "Fat-Grip Preacher Curl": "https://youtu.be/Xx6iqyRM5Mk",
+                "Hammer Curl": "https://youtu.be/xY3sQXYhk7A",
+                "Rope Face Pull": "https://youtu.be/GhrVM-jPIEA",
+                "Bent-Over Reverse DB Flye": "https://youtu.be/9BfxdGmekv4",
+                "Cross-Body Cable Y-Raise": "https://youtu.be/64RFJSCJuN8",
+                "DB Lateral Raise": "https://youtu.be/RyztKrzaMNk",
+                "Low Incline Machine Press": "https://youtu.be/JmsY9nSqX9E",
+                "Low Incline DB Press": "https://youtu.be/YmlMsvNGTKA",
+                "Bent-Over Cable Pec Flye": "https://youtu.be/DKaKmnB0BO8",
+                "DB Flye": "https://youtu.be/AOsdioes78c",
+                "Overhead Cable Extension (Rope)": "https://youtu.be/GYoUoVNlbGc",
+                "DB Skull Crusher": "https://youtu.be/fbLTzgTKOR8",
+                "Triceps Pressdown (Rope)": "https://youtu.be/bCa036rGtVU",
+                "Close-Grip Assisted Dip": "https://youtu.be/mpcPTUAhfto",
+                "Machine Crunch": "https://youtu.be/K2yKEoazT3g",
+                "Plate-Weighted Crunch": "https://youtu.be/mP99WSRI6Bc",
+                "Lying Leg Curl": "https://youtu.be/sX4tGtcc62k",
+                "Cable Hip Adduction": "https://youtu.be/6GYTbv-LtV0",
+                "Copenhagen Hip Adduction": "https://youtu.be/QRLGyl5-i4k",
+                "Machine Squat": "https://youtu.be/whJzh_27yHs",
+                "Front Squat": "https://youtu.be/TRwhJ0TCoqI",
+                "DB Step-Up": "https://youtu.be/3FNfi_PrP9Y",
+                "Reverse Nordic": "https://youtu.be/D-kqUKEQZZ0",
+                "Donkey Calf Raise": "https://youtu.be/0eQQwveeQzw",
+                "Seated Calf Raise": "https://youtu.be/6pfj0G7VKdM"
+            };
+            
+            if (exercise.substitutions && exercise.substitutions.length > 0) {
+                let subsHTML = '<strong>🔄 Substitutions:</strong><br>';
+                exercise.substitutions.forEach(sub => {
+                    const videoUrl = substitutionVideos[sub];
+                    if (videoUrl) {
+                        subsHTML += `<a href="${videoUrl}" target="_blank" style="color: var(--primary); text-decoration: none;">• ${sub} 🎥</a><br>`;
+                    } else {
+                        subsHTML += `• ${sub}<br>`;
+                    }
+                });
+                
+                content.innerHTML += `
+                    <div class="substitutions">
+                        ${subsHTML}
+                    </div>
+                `;
+            }
+            
+            // Warm-up sets
+            if (exercise.warmupSets > 0) {
+                const warmupSection = document.createElement('div');
+                warmupSection.className = 'sets-section';
+                
+                const warmupTitle = document.createElement('div');
+                warmupTitle.className = 'sets-section-title';
+                warmupTitle.textContent = `Warm-up Sets (${exercise.warmupSets})`;
+                warmupSection.appendChild(warmupTitle);
+                
+                for (let i = 0; i < exercise.warmupSets; i++) {
+                    const setRow = createSetRow(exerciseIndex, i, exercise, true);
+                    warmupSection.appendChild(setRow);
+                }
+                
+                content.appendChild(warmupSection);
+            }
+            
+            // Working sets
+            const workingSection = document.createElement('div');
+            workingSection.className = 'sets-section';
+            
+            const workingTitle = document.createElement('div');
+            workingTitle.className = 'sets-section-title';
+            workingTitle.textContent = `Working Sets (${exercise.workingSets})`;
+            workingSection.appendChild(workingTitle);
+            
+            for (let i = 0; i < exercise.workingSets; i++) {
+                const setRow = createSetRow(exerciseIndex, i, exercise, false);
+                workingSection.appendChild(setRow);
+            }
+            
+            content.appendChild(workingSection);
+            card.appendChild(header);
+            card.appendChild(content);
+            
+            return card;
+        }
+
+        function getPreviousPerformance(exerciseName) {
+            const relevant = workoutHistory.filter(h => h.exercises && h.exercises[exerciseName]);
+            if (relevant.length > 0) {
+                const last = relevant[relevant.length - 1].exercises[exerciseName];
+                if (last && last.working && last.working.length > 0) {
+                    const maxWeight = Math.max(...last.working.map(s => s.weight || 0));
+                    const maxReps = Math.max(...last.working.map(s => s.reps || 0));
+                    return `${maxWeight} lbs x ${maxReps} reps`;
+                }
+            }
+            return null;
+        }
+
+        function checkForPR(exerciseName, weight, reps) {
+            const prKey = `${exerciseName}_pr`;
+            const currentPR = personalRecords[prKey];
+            
+            const totalVolume = weight * reps;
+            
+            if (!currentPR || 
+                weight > currentPR.weight || 
+                (weight === currentPR.weight && reps > currentPR.reps) ||
+                totalVolume > currentPR.volume) {
+                
+                personalRecords[prKey] = {
+                    weight: weight,
+                    reps: reps,
+                    volume: totalVolume,
+                    date: new Date().toISOString(),
+                    week: currentWeek,
+                    workout: currentWorkoutType
+                };
+                
+                localStorage.setItem('personalRecords', JSON.stringify(personalRecords));
+                return true;
+            }
+            
+            return false;
+        }
+
+        function displayPRNotification(exerciseName, weight, reps) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #fbbf24, #f59e0b);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 9999;
+                font-weight: 700;
+                animation: slideDown 0.5s ease;
+            `;
+            notification.innerHTML = `
+                🏆 NEW PR! ${exerciseName}<br>
+                <span style="font-size: 14px; font-weight: 500;">${weight} lbs × ${reps} reps</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.5s ease';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        function createSetRow(exerciseIndex, setIndex, exercise, isWarmup) {
+            const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+            const setType = isWarmup ? 'warmup' : 'working';
+            const setData = workoutData[key] && workoutData[key][setType] && workoutData[key][setType][setIndex] || {};
+            
+            const row = document.createElement('div');
+            row.className = `set-row ${isWarmup ? 'warmup' : ''} ${setData.completed ? 'completed' : ''}`;
+            row.id = `set-${exerciseIndex}-${setType}-${setIndex}`;
+            
+            const isLastSet = !isWarmup && setIndex === exercise.workingSets - 1;
+            const targetRPE = isWarmup ? "Warm-up" : (isLastSet ? exercise.lastSetRPE : exercise.earlySetRPE);
+            
+            let warmupGuide = "";
+            if (isWarmup) {
+                const warmupPercentages = {
+                    1: exercise.warmupSets === 1 ? "~60%" : "~45%",
+                    2: exercise.warmupSets === 2 ? "~70%" : "~65%",
+                    3: "~85%"
+                };
+                warmupGuide = warmupPercentages[setIndex + 1] || "";
+            }
+            
+            row.innerHTML = `
+                <div class="set-number">${isWarmup ? 'W' : ''}${setIndex + 1}</div>
+                <div class="set-info">
+                    <div class="input-group">
+                        <input type="number" id="weight-${exerciseIndex}-${setType}-${setIndex}" 
+                               value="${setData.weight || ''}" 
+                               placeholder="${isWarmup ? warmupGuide : '0'}"
+                               onchange="updateSetData(${exerciseIndex}, ${setIndex}, 'weight', this.value, ${isWarmup})">
+                        <span class="input-label">lbs</span>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="reps-${exerciseIndex}-${setType}-${setIndex}" 
+                               value="${setData.reps || ''}" 
+                               placeholder="${isWarmup ? '6-10' : exercise.reps}"
+                               onchange="updateSetData(${exerciseIndex}, ${setIndex}, 'reps', this.value, ${isWarmup})">
+                        <span class="input-label">@ ${targetRPE}</span>
+                    </div>
+                    ${!isWarmup ? `<button class="set-complete-btn ${setData.completed ? 'completed' : ''}" 
+                            onclick="toggleSetComplete(${exerciseIndex}, ${setIndex}, '${exercise.rest}')">
+                        ${setData.completed ? '✔' : 'Done'}
+                    </button>` : ''}
+                </div>
+            `;
+            
+            const weightButtons = document.createElement('div');
+            weightButtons.className = 'weight-buttons';
+            weightButtons.innerHTML = `
+                <button class="weight-btn subtract" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, -45, ${isWarmup})">-45</button>
+                <button class="weight-btn subtract" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, -25, ${isWarmup})">-25</button>
+                <button class="weight-btn subtract" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, -10, ${isWarmup})">-10</button>
+                <button class="weight-btn subtract" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, -5, ${isWarmup})">-5</button>
+                <button class="weight-btn" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, 5, ${isWarmup})">+5</button>
+                <button class="weight-btn" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, 10, ${isWarmup})">+10</button>
+                <button class="weight-btn" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, 25, ${isWarmup})">+25</button>
+                <button class="weight-btn" onclick="adjustWeight(${exerciseIndex}, ${setIndex}, 45, ${isWarmup})">+45</button>
+            `;
+            row.appendChild(weightButtons);
+            
+            return row;
+        }
+
+        function toggleExercise(index) {
+            const card = document.getElementById(`exercise-${index}`);
+            card.classList.toggle('expanded');
+        }
+
+        function adjustWeight(exerciseIndex, setIndex, amount, isWarmup) {
+            const setType = isWarmup ? 'warmup' : 'working';
+            const input = document.getElementById(`weight-${exerciseIndex}-${setType}-${setIndex}`);
+            const currentWeight = parseFloat(input.value) || 0;
+            const newWeight = Math.max(0, currentWeight + amount);
+            input.value = newWeight;
+            updateSetData(exerciseIndex, setIndex, 'weight', newWeight, isWarmup);
+        }
+
+        function updateSetData(exerciseIndex, setIndex, field, value, isWarmup) {
+            const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+            const setType = isWarmup ? 'warmup' : 'working';
+            
+            if (!workoutData[key]) {
+                workoutData[key] = {};
+            }
+            if (!workoutData[key][setType]) {
+                workoutData[key][setType] = [];
+            }
+            if (!workoutData[key][setType][setIndex]) {
+                workoutData[key][setType][setIndex] = {};
+            }
+            
+            workoutData[key][setType][setIndex][field] = field === 'weight' || field === 'reps' ? parseFloat(value) : value;
+            saveToStorage();
+            
+            if (!isWarmup) {
+                updateSummary();
+            }
+        }
+
+        function toggleSetComplete(exerciseIndex, setIndex, restTime) {
+            const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+            if (!workoutData[key]) {
+                workoutData[key] = {};
+            }
+            if (!workoutData[key].working) {
+                workoutData[key].working = [];
+            }
+            if (!workoutData[key].working[setIndex]) {
+                workoutData[key].working[setIndex] = {};
+            }
+            
+            const isCompleted = !workoutData[key].working[setIndex].completed;
+            const setData = workoutData[key].working[setIndex];
+            
+            if (isCompleted) {
+                const week = workoutProgram.weeks[currentWeek - 1];
+                const workout = week.workouts[currentWorkoutType];
+                const exercise = workout[exerciseIndex];
+                
+                if (setData.weight && setData.reps) {
+                    const isPR = checkForPR(exercise.name, setData.weight, setData.reps);
+                    if (isPR) {
+                        displayPRNotification(exercise.name, setData.weight, setData.reps);
+                    }
+                }
+                
+                setData.completed = true;
+                setData.completedAt = new Date().toISOString();
+                
+                const setRow = document.getElementById(`set-${exerciseIndex}-working-${setIndex}`);
+                const btn = setRow.querySelector('.set-complete-btn');
+                
+                setRow.classList.add('completed');
+                btn.classList.add('completed');
+                btn.textContent = '✔';
+                
+                const restMinutes = parseInt(restTime.match(/\d+/)[0]);
+                startRestTimer(restMinutes * 60);
+            } else {
+                setData.completed = false;
+                setData.completedAt = null;
+                
+                const setRow = document.getElementById(`set-${exerciseIndex}-working-${setIndex}`);
+                const btn = setRow.querySelector('.set-complete-btn');
+                
+                setRow.classList.remove('completed');
+                btn.classList.remove('completed');
+                btn.textContent = 'Done';
+            }
+            
+            workoutData[key].working[setIndex] = setData;
+            saveToStorage();
+            updateSummary();
+            checkExerciseCompletion(exerciseIndex);
+            updateCompleteButton();
+        }
+
+        function checkExerciseCompletion(exerciseIndex) {
+            const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+            const week = workoutProgram.weeks[currentWeek - 1];
+            const workout = week.workouts[currentWorkoutType];
+            const exercise = workout[exerciseIndex];
+            
+            if (workoutData[key] && workoutData[key].working && 
+                workoutData[key].working.filter(set => set && set.completed).length === exercise.workingSets) {
+                document.getElementById(`exercise-${exerciseIndex}`).classList.add('completed');
+            } else {
+                document.getElementById(`exercise-${exerciseIndex}`).classList.remove('completed');
+            }
+        }
+
+        function updateCompleteButton() {
+            const btn = document.getElementById('completeWorkoutBtn');
+            const week = workoutProgram.weeks[currentWeek - 1];
+            if (!week) return;
+            
+            const workout = week.workouts[currentWorkoutType];
+            if (!workout) return;
+            
+            let totalSets = 0;
+            let completedSets = 0;
+            
+            workout.forEach((exercise, exerciseIndex) => {
+                totalSets += exercise.workingSets;
+                const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+                if (workoutData[key] && workoutData[key].working) {
+                    completedSets += workoutData[key].working.filter(set => set && set.completed).length;
+                }
+            });
+            
+            btn.disabled = completedSets === 0;
+            btn.textContent = completedSets === totalSets ? '🎉 Complete Workout!' : 'Complete Workout';
+        }
+
+        function completeWorkout() {
+            const week = workoutProgram.weeks[currentWeek - 1];
+            const workout = week.workouts[currentWorkoutType];
+            
+            let totalVolume = 0;
+            let totalSets = 0;
+            let exercises = {};
+            
+            workout.forEach((exercise, exerciseIndex) => {
+                const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+                if (workoutData[key] && workoutData[key].working) {
+                    exercises[exercise.name] = workoutData[key];
+                    workoutData[key].working.forEach(set => {
+                        if (set && set.completed) {
+                            totalSets++;
+                            if (set.weight && set.reps) {
+                                totalVolume += set.weight * set.reps;
+                            }
+                        }
+                    });
+                }
+            });
+            
+            workoutHistory.push({
+                week: currentWeek,
+                workoutType: currentWorkoutType,
+                completedAt: new Date().toISOString(),
+                totalVolume: totalVolume,
+                totalSets: totalSets,
+                exercises: exercises
+            });
+            
+            workout.forEach((_, exerciseIndex) => {
+                const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+                delete workoutData[key];
+            });
+            
+            saveToStorage();
+            
+            alert(`Great workout! 💪\n\nTotal Volume: ${totalVolume.toLocaleString()} lbs\nSets Completed: ${totalSets}\n\nRest well and get ready for the next one!`);
+            
+            loadCurrentWorkout();
+        }
+
+        function startRestTimer(seconds) {
+            clearInterval(restTimerInterval);
+            restTimeRemaining = seconds;
+            
+            const timerElement = document.getElementById('restTimer');
+            timerElement.classList.add('active');
+            
+            updateTimerDisplay();
+            
+            restTimerInterval = setInterval(() => {
+                restTimeRemaining--;
+                updateTimerDisplay();
+                
+                if (restTimeRemaining <= 0) {
+                    clearInterval(restTimerInterval);
+                    timerElement.classList.remove('active');
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200]);
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(restTimeRemaining / 60);
+            const seconds = restTimeRemaining % 60;
+            document.getElementById('timerDisplay').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function addTime(seconds) {
+            restTimeRemaining += seconds;
+            updateTimerDisplay();
+        }
+
+        function skipTimer() {
+            clearInterval(restTimerInterval);
+            document.getElementById('restTimer').classList.remove('active');
+        }
+
+        function updateSummary(totalSets, completedSets) {
+            const week = workoutProgram.weeks[currentWeek - 1];
+            if (!week) return;
+            
+            const workout = week.workouts[currentWorkoutType];
+            if (!workout) return;
+            
+            if (totalSets === undefined) {
+                totalSets = 0;
+                completedSets = 0;
+                let totalVolume = 0;
+                
+                workout.forEach((exercise, exerciseIndex) => {
+                    totalSets += exercise.workingSets;
+                    const key = `week${currentWeek}_${currentWorkoutType}_ex${exerciseIndex}`;
+                    if (workoutData[key] && workoutData[key].working) {
+                        workoutData[key].working.forEach(set => {
+                            if (set && set.completed) {
+                                completedSets++;
+                                if (set.weight && set.reps) {
+                                    totalVolume += set.weight * set.reps;
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                document.getElementById('totalVolume').textContent = totalVolume.toLocaleString();
+            }
+            
+            document.getElementById('totalSets').textContent = totalSets;
+            document.getElementById('completedSets').textContent = completedSets;
+            
+            const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+
+        function updateUI() {
+            const week = workoutProgram.weeks[currentWeek - 1];
+            if (!week) return;
+            
+            document.getElementById('currentWeek').textContent = `Week ${currentWeek}`;
+            document.getElementById('currentDay').textContent = currentWorkoutType;
+            document.getElementById('currentPhase').textContent = week.phase;
+            
+            const deloadWarning = document.getElementById('deloadWarning');
+            if (week.isDeload) {
+                deloadWarning.style.display = 'block';
+            } else {
+                deloadWarning.style.display = 'none';
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'program') {
+                loadProgramView();
+            } else if (tabName === 'history') {
+                loadHistoryView();
+            }
+        }
+
+        function loadProgramView() {
+            const container = document.getElementById('programContent');
+            let html = '<div class="workout-summary"><div class="summary-title">10-Week Program Overview</div></div>';
+            
+            const totalWorkouts = 10 * 8;
+            const completedWorkouts = workoutHistory.filter(h => h.completedAt).length;
+            const progressPercent = Math.round((completedWorkouts / totalWorkouts) * 100);
+            
+            html += `
+                <div class="backup-section">
+                    <strong>📊 Overall Progress</strong>
+                    <div style="margin-top: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                            <span>${completedWorkouts} / ${totalWorkouts} workouts</span>
+                            <span>${progressPercent}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            workoutProgram.weeks.forEach(week => {
+                const weekWorkouts = workoutHistory.filter(h => h.week === week.weekNum && h.completedAt);
+                const workoutTypes = ["Pull #1", "Push #1", "Legs #1", "Arms & Weak Point", "Pull #2", "Push #2", "Legs #2", "Arms & Weak Point"];
+                
+                html += `
+                    <div class="history-card">
+                        <div class="history-date">
+                            Week ${week.weekNum} - ${week.phase} ${week.isDeload ? '(DELOAD)' : ''}
+                            <span style="float: right; color: var(--success);">${weekWorkouts.length}/8</span>
+                        </div>
+                        <div class="history-exercise" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                `;
+                
+                workoutTypes.forEach(type => {
+                    const isCompleted = weekWorkouts.some(w => w.workoutType === type);
+                    const buttonStyle = `
+                        padding: 6px 10px; 
+                        border-radius: 6px; 
+                        font-size: 11px;
+                        font-weight: 600;
+                        background: ${isCompleted ? 'var(--success)' : 'var(--white)'};
+                        color: ${isCompleted ? 'white' : 'var(--dark)'};
+                        border: 1px solid ${isCompleted ? 'var(--success)' : 'var(--border)'};
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    `;
+                    
+                    html += `
+                        <button onclick="loadWorkoutFromProgram(${week.weekNum}, '${type}')" 
+                                style="${buttonStyle}"
+                                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';"
+                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                            ${type.replace(' #', '').replace('Arms & Weak Point', 'Arms')} ${isCompleted ? '✔' : ''}
+                        </button>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function loadWorkoutFromProgram(week, workoutType) {
+            currentWeek = week;
+            currentWorkoutType = workoutType;
+            saveToStorage();
+            loadCurrentWorkout();
+            updateUI();
+            
+            // Switch to workout tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('workout-tab').classList.add('active');
+            document.querySelector('.tab-button:first-child').classList.add('active');
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+            
+            // Show feedback
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--primary);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 999;
+                font-weight: 600;
+                animation: slideDown 0.3s ease;
+            `;
+            notification.textContent = `Loaded: Week ${week} - ${workoutType}`;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        function loadHistoryView() {
+            const container = document.getElementById('historyContent');
+            
+            let html = `
+                <div class="workout-summary">
+                    <div class="summary-title">Workout History</div>
+                </div>
+                <div class="backup-section">
+                    <strong>📱 Data Backup</strong>
+                    <p style="font-size: 13px; color: var(--medium); margin-top: 8px;">
+                        Your data is saved locally. Export regularly to prevent loss.
+                    </p>
+                    <div class="backup-buttons">
+                        <button class="backup-btn export-btn" onclick="exportData()">
+                            📥 Export Backup
+                        </button>
+                        <button class="backup-btn import-btn" onclick="document.getElementById('importFile').click()">
+                            📤 Import Backup
+                        </button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+                    </div>
+                </div>
+            `;
+            
+            if (workoutHistory.length === 0) {
+                html += '<div style="text-align: center; padding: 40px; color: var(--medium);">No workout history yet. Complete some sets to see your progress!</div>';
+            } else {
+                const sorted = [...workoutHistory].sort((a, b) => 
+                    new Date(b.completedAt) - new Date(a.completedAt)
+                );
+                
+                sorted.forEach(workout => {
+                    const date = new Date(workout.completedAt);
+                    html += `
+                        <div class="history-card">
+                            <div class="history-date">
+                                ${date.toLocaleDateString()} - Week ${workout.week} ${workout.workoutType}
+                            </div>
+                            <div class="history-exercise">
+                                Total Volume: ${workout.totalVolume.toLocaleString()} lbs
+                            </div>
+                            <div class="history-sets">
+                                ${workout.totalSets} sets completed
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function exportData() {
+            const exportData = {
+                version: "1.0",
+                exportDate: new Date().toISOString(),
+                currentWeek: currentWeek,
+                currentWorkoutType: currentWorkoutType,
+                workoutData: workoutData,
+                workoutHistory: workoutHistory,
+                personalRecords: personalRecords
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `ppl-backup-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            alert('✅ Backup exported successfully!\n\nSave this file somewhere safe.');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (!importedData.version || !importedData.workoutHistory) {
+                        throw new Error('Invalid backup file');
+                    }
+                    
+                    if (confirm('⚠️ This will replace all your current data with the imported backup. Continue?')) {
+                        currentWeek = importedData.currentWeek || 1;
+                        currentWorkoutType = importedData.currentWorkoutType || "Push #1";
+                        workoutData = importedData.workoutData || {};
+                        workoutHistory = importedData.workoutHistory || [];
+                        personalRecords = importedData.personalRecords || {};
+                        
+                        saveToStorage();
+                        loadCurrentWorkout();
+                        updateUI();
+                        
+                        alert('✅ Data imported successfully!');
+                    }
+                } catch (error) {
+                    alert('❌ Error importing file. Please make sure it\'s a valid backup file.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+            
+            event.target.value = '';
+        }
+
+        function showWorkoutSelector() {
+            const modal = document.getElementById('workoutModal');
+            const selector = document.getElementById('workoutSelector');
+            
+            selector.innerHTML = '';
+            
+            const workoutTypes = ["Pull #1", "Push #1", "Legs #1", "Arms & Weak Point", "Pull #2", "Push #2", "Legs #2"];
+            
+            workoutTypes.forEach(type => {
+                const isCompleted = workoutHistory.some(h => 
+                    h.week === currentWeek && 
+                    h.workoutType === type && 
+                    h.completedAt
+                );
+                
+                const option = document.createElement('div');
+                option.className = `workout-option ${type === currentWorkoutType ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
+                option.onclick = () => selectWorkout(type);
+                option.innerHTML = `
+                    <strong>${type}</strong>
+                    <div style="font-size: 12px; color: var(--medium); margin-top: 4px;">
+                        Week ${currentWeek}
+                        ${isCompleted ? '• Completed' : ''}
+                    </div>
+                `;
+                selector.appendChild(option);
+            });
+            
+            const weekSelector = document.createElement('div');
+            weekSelector.style.marginTop = '20px';
+            weekSelector.innerHTML = `
+                <label style="font-weight: 600; margin-bottom: 8px; display: block;">Select Week:</label>
+                <select id="weekSelect" onchange="updateWeekSelection()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
+                    ${Array.from({length: 10}, (_, i) => i + 1).map(w => 
+                        `<option value="${w}" ${w === currentWeek ? 'selected' : ''}>
+                            Week ${w} - ${w <= 5 ? 'Build Phase' : 'Novelty Phase'} ${w === 5 ? '(DELOAD)' : ''}
+                        </option>`
+                    ).join('')}
+                </select>
+            `;
+            selector.appendChild(weekSelector);
+            
+            modal.classList.add('active');
+        }
+
+        function updateWeekSelection() {
+            const weekSelect = document.getElementById('weekSelect');
+            const tempWeek = parseInt(weekSelect.value);
+            
+            const selector = document.getElementById('workoutSelector');
+            const workoutTypes = ["Pull #1", "Push #1", "Legs #1", "Arms & Weak Point", "Pull #2", "Push #2", "Legs #2"];
+            
+            const options = selector.querySelectorAll('.workout-option');
+            options.forEach((option, index) => {
+                if (index < workoutTypes.length) {
+                    const type = workoutTypes[index];
+                    const isCompleted = workoutHistory.some(h => 
+                        h.week === tempWeek && 
+                        h.workoutType === type && 
+                        h.completedAt
+                    );
+                    
+                    option.className = `workout-option ${type === currentWorkoutType ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
+                    option.querySelector('div').innerHTML = `
+                        Week ${tempWeek}
+                        ${isCompleted ? '• Completed' : ''}
+                    `;
+                }
+            });
+        }
+
+        function selectWorkout(type) {
+            document.querySelectorAll('.workout-option').forEach(opt => opt.classList.remove('selected'));
+            event.target.closest('.workout-option').classList.add('selected');
+            selectedWorkoutType = type;
+        }
+
+        function loadSelectedWorkout() {
+            const weekSelect = document.getElementById('weekSelect');
+            if (weekSelect) {
+                currentWeek = parseInt(weekSelect.value);
+            }
+            if (selectedWorkoutType) {
+                currentWorkoutType = selectedWorkoutType;
+            }
+            saveToStorage();
+            loadCurrentWorkout();
+            updateUI();
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('workoutModal').classList.remove('active');
+            selectedWorkoutType = "";
+        }
+    </script>
+</body>
+</html>
