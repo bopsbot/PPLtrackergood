@@ -386,6 +386,45 @@
             border-radius: 4px;
         }
 
+        .substitution-item {
+            display: inline-block;
+            background: #252540;
+            color: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 4px 4px 4px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #3d3d5c;
+        }
+
+        .substitution-item:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .substitution-item .swap-icon {
+            margin-left: 6px;
+            opacity: 0.7;
+        }
+
+        .reset-exercise-btn {
+            background: #3d3520;
+            color: #fbbf24;
+            border: 1px solid #5a5025;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .reset-exercise-btn:hover {
+            background: #4d4530;
+        }
+
+
         .sets-section {
             margin-bottom: 20px;
         }
@@ -2483,6 +2522,62 @@
             return null;
         }
 
+        // Exercise substitution functions
+        let exerciseSubstitutions = JSON.parse(localStorage.getItem('exerciseSubstitutions') || '{}');
+
+        function getSubstitutionKey(week, workoutType, exerciseIndex) {
+            return `${week}_${workoutType}_${exerciseIndex}`;
+        }
+
+        function getActiveSubstitution(week, workoutType, exerciseIndex) {
+            const key = getSubstitutionKey(week, workoutType, exerciseIndex);
+            return exerciseSubstitutions[key] || null;
+        }
+
+        function saveSubstitution(week, workoutType, exerciseIndex, originalExercise, newExercise, newSubstitutions) {
+            const key = getSubstitutionKey(week, workoutType, exerciseIndex);
+            exerciseSubstitutions[key] = {
+                originalExercise: originalExercise,
+                currentExercise: newExercise,
+                substitutions: newSubstitutions
+            };
+            localStorage.setItem('exerciseSubstitutions', JSON.stringify(exerciseSubstitutions));
+        }
+
+        function clearSubstitution(week, workoutType, exerciseIndex) {
+            const key = getSubstitutionKey(week, workoutType, exerciseIndex);
+            delete exerciseSubstitutions[key];
+            localStorage.setItem('exerciseSubstitutions', JSON.stringify(exerciseSubstitutions));
+        }
+
+        function swapExercise(exerciseIndex, substitutionName) {
+            const workout = getWorkoutForWeek(currentWeek, currentWorkoutType);
+            const exercise = workout[exerciseIndex];
+            const activeSub = getActiveSubstitution(currentWeek, currentWorkoutType, exerciseIndex);
+            
+            // Get current state
+            const currentName = activeSub ? activeSub.currentExercise : exercise.name;
+            const currentSubs = activeSub ? activeSub.substitutions : [...exercise.substitutions];
+            const originalExercise = activeSub ? activeSub.originalExercise : exercise.name;
+            
+            // Build new substitutions list: remove the one we're swapping to, add current
+            const newSubs = currentSubs.filter(s => s !== substitutionName);
+            if (currentName !== originalExercise || !activeSub) {
+                newSubs.push(currentName);
+            }
+            
+            // Save the swap
+            saveSubstitution(currentWeek, currentWorkoutType, exerciseIndex, originalExercise, substitutionName, newSubs);
+            
+            // Refresh the workout view
+            loadCurrentWorkout();
+        }
+
+        function resetExercise(exerciseIndex) {
+            clearSubstitution(currentWeek, currentWorkoutType, exerciseIndex);
+            loadCurrentWorkout();
+        }
+
         // Weak point exercise bank organized by body part
         const weakPointExercises = {
             "Shoulders": [
@@ -2812,6 +2907,58 @@
                 }
             }
 
+            // Check for active substitution
+            const activeSub = getActiveSubstitution(currentWeek, currentWorkoutType, exerciseIndex);
+            let activeSubstitutions = exercise.substitutions ? [...exercise.substitutions] : [];
+            let isSubstituted = false;
+
+            if (activeSub && !isWeakPoint) {
+                displayName = activeSub.currentExercise;
+                activeSubstitutions = activeSub.substitutions;
+                isSubstituted = true;
+
+                // Get video URL for substituted exercise
+                const substitutionVideos = {
+                    "Half-Kneeling 1-Arm Lat Pulldown": "https://youtu.be/r8K1Fkch5go",
+                    "Neutral-Grip Pullup": "https://youtu.be/b0ypSz63UGo",
+                    "DB RDL": "https://youtu.be/TZAmthQJkh8",
+                    "Nordic Ham Curl": "https://youtu.be/fzpYiRtzmFA",
+                    "Chest-Supported T-Bar Row": "https://youtu.be/q8qlHwcuOtc",
+                    "Helms Row": "https://youtu.be/DjO2G9DIerQ",
+                    "Machine Lat Pullover": "https://youtu.be/YT0K0PBl3nk",
+                    "DB Lat Pullover": "https://youtu.be/iaRefVKBM",
+                    "Fat-Grip Preacher Curl": "https://youtu.be/Xx6iqyRM5Mk",
+                    "Hammer Curl": "https://youtu.be/xY3sQXYhk7A",
+                    "Rope Face Pull": "https://youtu.be/GhrVM-jPIEA",
+                    "Bent-Over Reverse DB Flye": "https://youtu.be/9BfxdGmekv4",
+                    "Cross-Body Cable Y-Raise": "https://youtu.be/64RFJSCJuN8",
+                    "DB Lateral Raise": "https://youtu.be/RyztKrzaMNk",
+                    "Low Incline Machine Press": "https://youtu.be/JmsY9nSqX9E",
+                    "Low Incline DB Press": "https://youtu.be/YmlMsvNGTKA",
+                    "Bent-Over Cable Pec Flye": "https://youtu.be/DKaKmnB0BO8",
+                    "DB Flye": "https://youtu.be/AOsdioes78c",
+                    "Overhead Cable Extension (Rope)": "https://youtu.be/GYoUoVNlbGc",
+                    "DB Skull Crusher": "https://youtu.be/fbLTzgTKOR8",
+                    "Triceps Pressdown (Rope)": "https://youtu.be/bCa036rGtVU",
+                    "Close-Grip Assisted Dip": "https://youtu.be/mpcPTUAhfto",
+                    "Machine Crunch": "https://youtu.be/K2yKEoazT3g",
+                    "Plate-Weighted Crunch": "https://youtu.be/mP99WSRI6Bc",
+                    "Lying Leg Curl": "https://youtu.be/sX4tGtcc62k",
+                    "Cable Hip Adduction": "https://youtu.be/6GYTbv-LtV0",
+                    "Copenhagen Hip Adduction": "https://youtu.be/QRLGyl5-i4k",
+                    "Machine Squat": "https://youtu.be/whJzh_27yHs",
+                    "Front Squat": "https://youtu.be/TRwhJ0TCoqI",
+                    "DB Step-Up": "https://youtu.be/3FNfi_PrP9Y",
+                    "Reverse Nordic": "https://youtu.be/D-kqUKEQZZ0",
+                    "Donkey Calf Raise": "https://youtu.be/0eQQwveeQzw",
+                    "Seated Calf Raise": "https://youtu.be/6pfj0G7VKdM"
+                };
+
+                if (substitutionVideos[displayName]) {
+                    displayVideoUrl = substitutionVideos[displayName];
+                }
+            }
+
             const header = document.createElement('div');
             header.className = 'exercise-header';
             header.onclick = () => toggleExercise(exerciseIndex);
@@ -2958,17 +3105,20 @@
                 "Seated Calf Raise": "https://youtu.be/6pfj0G7VKdM"
             };
             
-            if (exercise.substitutions && exercise.substitutions.length > 0) {
-                let subsHTML = '<strong>🔄 Substitutions:</strong><br>';
-                exercise.substitutions.forEach(sub => {
-                    const videoUrl = substitutionVideos[sub];
-                    if (videoUrl) {
-                        subsHTML += `<a href="${videoUrl}" target="_blank" style="color: var(--primary); text-decoration: none;">• ${sub} 🎥</a><br>`;
-                    } else {
-                        subsHTML += `• ${sub}<br>`;
-                    }
+            // Use activeSubstitutions which accounts for any swaps made
+            if (activeSubstitutions && activeSubstitutions.length > 0 && !isWeakPoint) {
+                let subsHTML = '<strong>🔄 Substitutions:</strong> <span style="font-size: 11px; color: #94a3b8;">(tap to swap)</span><div style="margin-top: 8px;">';
+                activeSubstitutions.forEach(sub => {
+                    const escapedSub = sub.replace(/'/g, "\\'");
+                    subsHTML += `<div class="substitution-item" onclick="swapExercise(${exerciseIndex}, '${escapedSub}')">${sub} <span class="swap-icon">🔄</span></div>`;
                 });
-                
+                subsHTML += '</div>';
+
+                // Add Reset to Original button if this exercise has been substituted
+                if (isSubstituted) {
+                    subsHTML += `<button class="reset-exercise-btn" onclick="resetExercise(${exerciseIndex})">↩️ Reset to Original (${activeSub.originalExercise})</button>`;
+                }
+
                 content.innerHTML += `
                     <div class="substitutions">
                         ${subsHTML}
