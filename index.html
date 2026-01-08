@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='%238b5cf6'/><text x='50' y='68' text-anchor='middle' font-size='36' font-weight='bold' font-family='Arial' fill='white'>PPL</text></svg>">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Jeff Nippard PPL Tracker</title>
+    <title>Push-Pull-Legs Tracker</title>
     <style>
         * {
             margin: 0;
@@ -1115,6 +1116,8 @@
         .workout-dot.push { background: #ef4444; }
         .workout-dot.legs { background: #22c55e; }
         .workout-dot.arms { background: #8b5cf6; }
+        .workout-dot.rest { background: #64748b; }
+        .workout-dot.active-rest { background: #f97316; }
 
         .calendar-legend {
             display: flex;
@@ -1142,6 +1145,8 @@
         .legend-dot.push { background: #ef4444; }
         .legend-dot.legs { background: #22c55e; }
         .legend-dot.arms { background: #8b5cf6; }
+        .legend-dot.rest { background: #64748b; }
+        .legend-dot.active-rest { background: #f97316; }
 
         .day-detail-modal {
             position: fixed;
@@ -1195,7 +1200,7 @@
 <body>
     <div class="app-container">
         <div class="header">
-            <h1>💪 Jeff Nippard PPL Tracker</h1>
+            <h1>💪 Push-Pull-Legs Tracker</h1>
             <div class="subtitle">
                 <span id="currentWeek">Week 1</span>
                 <span>•</span>
@@ -1267,6 +1272,8 @@
                         <span class="legend-item"><span class="legend-dot push"></span> Push</span>
                         <span class="legend-item"><span class="legend-dot legs"></span> Legs</span>
                         <span class="legend-item"><span class="legend-dot arms"></span> Arms</span>
+                        <span class="legend-item"><span class="legend-dot rest"></span> Rest</span>
+                        <span class="legend-item"><span class="legend-dot active-rest"></span> Active Rest</span>
                     </div>
                 </div>
             </div>
@@ -3924,12 +3931,18 @@
                 if (workoutsOnDay.length > 0) {
                     dotsHtml = '<div class="workout-dots">';
                     workoutsOnDay.forEach(w => {
-                        const type = w.workoutType.toLowerCase();
                         let dotClass = '';
-                        if (type.includes('pull')) dotClass = 'pull';
-                        else if (type.includes('push')) dotClass = 'push';
-                        else if (type.includes('legs')) dotClass = 'legs';
-                        else if (type.includes('arms')) dotClass = 'arms';
+                        if (w.type === 'rest') {
+                            dotClass = 'rest';
+                        } else if (w.type === 'active-rest') {
+                            dotClass = 'active-rest';
+                        } else if (w.workoutType) {
+                            const type = w.workoutType.toLowerCase();
+                            if (type.includes('pull')) dotClass = 'pull';
+                            else if (type.includes('push')) dotClass = 'push';
+                            else if (type.includes('legs')) dotClass = 'legs';
+                            else if (type.includes('arms')) dotClass = 'arms';
+                        }
                         dotsHtml += `<div class="workout-dot ${dotClass}"></div>`;
                     });
                     dotsHtml += '</div>';
@@ -3962,7 +3975,10 @@
 
         function showDayDetail(dateStr) {
             const workouts = getWorkoutsForDate(dateStr);
-            if (workouts.length === 0) return;
+            if (workouts.length === 0) {
+                showRestDayModal(dateStr);
+                return;
+            }
             
             const date = new Date(dateStr + 'T12:00:00');
             const modal = document.createElement('div');
@@ -3973,12 +3989,21 @@
                 <h3 style="margin-bottom: 16px; color: var(--dark);">${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>`;
             
             workouts.forEach(w => {
-                content += `<div style="padding: 12px; background: #252540; border-radius: 8px; margin-bottom: 8px;">
-                    <div style="font-weight: 600; color: var(--dark);">Week ${w.week} - ${w.workoutType}</div>
-                    <div style="color: var(--medium); font-size: 13px; margin-top: 4px;">
-                        ${w.totalVolume.toLocaleString()} lbs • ${w.totalSets} sets
-                    </div>
-                </div>`;
+                if (w.type === 'rest' || w.type === 'active-rest') {
+                    const label = w.type === 'active-rest' ? 'Active Rest' : 'Rest Day';
+                    const color = w.type === 'active-rest' ? '#f97316' : '#64748b';
+                    content += `<div style="padding: 12px; background: #252540; border-radius: 8px; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: ${color};">${label}</div>
+                        ${w.note ? `<div style="color: var(--medium); font-size: 13px; margin-top: 4px;">${w.note}</div>` : ''}
+                    </div>`;
+                } else {
+                    content += `<div style="padding: 12px; background: #252540; border-radius: 8px; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: var(--dark);">Week ${w.week} - ${w.workoutType}</div>
+                        <div style="color: var(--medium); font-size: 13px; margin-top: 4px;">
+                            ${w.totalVolume.toLocaleString()} lbs • ${w.totalSets} sets
+                        </div>
+                    </div>`;
+                }
             });
             
             content += `<button onclick="this.parentElement.parentElement.remove()" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; margin-top: 8px; cursor: pointer;">Close</button></div>`;
@@ -3987,7 +4012,80 @@
             document.body.appendChild(modal);
         }
 
-        function updateStreak() {
+        function showRestDayModal(dateStr) {
+            const date = new Date(dateStr + 'T12:00:00');
+            const modal = document.createElement('div');
+            modal.className = 'day-detail-modal';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            
+            const content = `<div class="day-detail-content">
+                <h3 style="margin-bottom: 16px; color: var(--dark);">Log Rest Day</h3>
+                <p style="color: var(--medium); margin-bottom: 16px; font-size: 14px;">${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <button onclick="selectRestType('active-rest', '${dateStr}')" id="activeRestBtn" style="flex: 1; padding: 12px; background: #f97316; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Active Rest
+                    </button>
+                    <button onclick="selectRestType('rest', '${dateStr}')" id="restBtn" style="flex: 1; padding: 12px; background: #64748b; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Rest Day
+                    </button>
+                </div>
+                
+                <input type="text" id="restDayNote" placeholder="Add a note (optional)" style="width: 100%; padding: 12px; border: 1px solid #3d3d5c; border-radius: 8px; background: #252540; color: var(--dark); margin-bottom: 16px; box-sizing: border-box;">
+                
+                <input type="hidden" id="selectedRestType" value="">
+                <input type="hidden" id="selectedRestDate" value="${dateStr}">
+                
+                <button onclick="saveRestDay()" id="saveRestBtn" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; opacity: 0.5;" disabled>Save Rest Day</button>
+                
+                <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; padding: 12px; background: transparent; color: var(--medium); border: 1px solid #3d3d5c; border-radius: 8px; font-weight: 600; margin-top: 8px; cursor: pointer;">Cancel</button>
+            </div>`;
+            
+            modal.innerHTML = content;
+            document.body.appendChild(modal);
+        }
+
+        function selectRestType(type, dateStr) {
+            document.getElementById('selectedRestType').value = type;
+            document.getElementById('saveRestBtn').disabled = false;
+            document.getElementById('saveRestBtn').style.opacity = '1';
+            
+            const activeBtn = document.getElementById('activeRestBtn');
+            const restBtn = document.getElementById('restBtn');
+            
+            if (type === 'active-rest') {
+                activeBtn.style.outline = '3px solid white';
+                restBtn.style.outline = 'none';
+            } else {
+                restBtn.style.outline = '3px solid white';
+                activeBtn.style.outline = 'none';
+            }
+        }
+
+        function saveRestDay() {
+            const type = document.getElementById('selectedRestType').value;
+            const dateStr = document.getElementById('selectedRestDate').value;
+            const note = document.getElementById('restDayNote').value;
+            
+            if (!type) return;
+            
+            logRestDay(type, note, dateStr);
+            document.querySelector('.day-detail-modal').remove();
+        }
+
+        function logRestDay(type, note, dateStr) {
+            const date = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
+            workoutHistory.push({
+                completedAt: date.toISOString(),
+                type: type,
+                note: note || '',
+                week: currentWeek
+            });
+            saveToStorage();
+            renderCalendar();
+        }
+
+                function updateStreak() {
             let streak = 0;
             const today = new Date();
             today.setHours(0, 0, 0, 0);
