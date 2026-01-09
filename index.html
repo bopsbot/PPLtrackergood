@@ -112,6 +112,7 @@
             border: none;
             background: none;
             color: var(--medium);
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
@@ -549,7 +550,7 @@
         }
 
         .rep-buttons {
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: auto 1fr 1fr 1fr auto;
             margin-top: 6px;
             padding-top: 6px;
             border-top: 1px dashed var(--border);
@@ -2884,7 +2885,7 @@
                 const date = new Date(last.completedAt).toLocaleDateString();
                 
                 previousContainer.innerHTML = `
-                    <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 4px solid var(--warning); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                    <div style="background: linear-gradient(135deg, #2d2d4a 0%, #353555 100%); border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px; margin-bottom: 16px; color: #f1f5f9;">
                         <strong>📊 Last ${currentWorkoutType}: ${date}</strong>
                         <div>Total Volume: ${last.totalVolume.toLocaleString()} lbs • ${last.totalSets} sets completed</div>
                     </div>
