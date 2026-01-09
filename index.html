@@ -107,8 +107,7 @@
 
         .tab-button {
             flex: 1;
-            padding: 16px;
-            min-height: 100px;
+            padding: 12px 8px;
             border: none;
             background: none;
             color: var(--medium);
@@ -1173,6 +1172,10 @@
         @media (max-width: 480px) {
             .weight-buttons {
                 grid-template-columns: repeat(4, 1fr);
+            }
+
+            .rep-buttons {
+                grid-template-columns: auto 1fr 1fr 1fr auto;
             }
 
             input[type="number"] {
