@@ -3847,6 +3847,14 @@
                         </button>
                         <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
                     </div>
+                    <div class="backup-buttons" style="margin-top: 8px;">
+                        <button class="backup-btn" style="background: #10b981; flex: 1;" onclick="copyDataToClipboard()">
+                            📋 Copy Data to Clipboard
+                        </button>
+                    </div>
+                    <div id="dataPreview" style="display: none; margin-top: 12px; background: var(--input-bg); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;">
+                        <pre id="dataPreviewContent" style="font-size: 11px; white-space: pre-wrap; word-break: break-all; color: var(--medium);"></pre>
+                    </div>
                 </div>
             `;
             
@@ -4125,18 +4133,64 @@
                 workoutHistory: workoutHistory,
                 personalRecords: personalRecords
             };
-            
+
             const dataStr = JSON.stringify(exportData, null, 2);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
+
             const exportFileDefaultName = `ppl-backup-${new Date().toISOString().split('T')[0]}.json`;
-            
+
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
             linkElement.setAttribute('download', exportFileDefaultName);
             linkElement.click();
-            
+
             alert('✅ Backup exported successfully!\n\nSave this file somewhere safe.');
+        }
+
+        function copyDataToClipboard() {
+            const exportData = {
+                version: "1.0",
+                exportDate: new Date().toISOString(),
+                currentWeek: currentWeek,
+                currentWorkoutType: currentWorkoutType,
+                workoutData: workoutData,
+                workoutHistory: workoutHistory,
+                personalRecords: personalRecords
+            };
+
+            const dataStr = JSON.stringify(exportData, null, 2);
+
+            // Try clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(dataStr).then(() => {
+                    alert('✅ Data copied to clipboard!\n\nPaste it into a note or message to save it.');
+                }).catch(err => {
+                    // Fallback: show data in preview area
+                    showDataPreview(dataStr);
+                });
+            } else {
+                // Fallback for older browsers/iOS
+                showDataPreview(dataStr);
+            }
+        }
+
+        function showDataPreview(dataStr) {
+            const preview = document.getElementById('dataPreview');
+            const content = document.getElementById('dataPreviewContent');
+
+            if (preview && content) {
+                content.textContent = dataStr;
+                preview.style.display = 'block';
+
+                // Select all text for easy copying
+                const range = document.createRange();
+                range.selectNodeContents(content);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                alert('📋 Data shown below!\n\nLong-press and "Select All" then "Copy" to copy it.');
+            }
         }
 
         function importData(event) {
