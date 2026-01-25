@@ -3776,7 +3776,32 @@
                     </div>
                 `;
             });
-            
+
+            // Add Export Data Section at bottom of Program view
+            html += `
+                <div class="backup-section" style="margin-top: 24px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 2px solid var(--primary);">
+                    <strong style="color: var(--primary);">📦 Export Your Data</strong>
+                    <p style="font-size: 13px; color: #aaa; margin: 12px 0;">
+                        Download all your workout history, personal records, and progress data as a backup file.
+                    </p>
+                    <button onclick="exportData()" style="
+                        width: 100%;
+                        padding: 14px 20px;
+                        background: var(--primary);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.4)';"
+                       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                        ⬇️ Export All Data
+                    </button>
+                </div>
+            `;
+
             container.innerHTML = html;
         }
 
